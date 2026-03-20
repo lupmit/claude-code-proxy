@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { geminiService } from "../services/gemini.service";
+import { geminiService } from "../services/gemini.service.js";
 
 type GenerateBody = {
   prompt?: string;

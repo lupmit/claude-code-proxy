@@ -1,13 +1,16 @@
-import { app } from "./app";
-import { env } from "./config/env";
-import { geminiService } from "./services/gemini.service";
+import { app } from "./app.js";
+import { env } from "./config/env.js";
+import { geminiService } from "./services/gemini.service.js";
 
-const server = app.listen(env.port, () => {
-  console.log(`Server started on http://localhost:${env.port}`);
-});
+let server: ReturnType<typeof app.listen> | null = null;
 
 async function shutdown(signal: string): Promise<void> {
   console.log(`Received ${signal}. Shutting down gracefully...`);
+
+  if (!server) {
+    await geminiService.close();
+    process.exit(0);
+  }
 
   server.close(async () => {
     try {
@@ -28,3 +31,19 @@ process.on("SIGINT", () => {
 process.on("SIGTERM", () => {
   void shutdown("SIGTERM");
 });
+
+async function bootstrap(): Promise<void> {
+  try {
+    await geminiService.init();
+    console.log("Gemini client initialized.");
+
+    server = app.listen(env.port, () => {
+      console.log(`Server started on http://localhost:${env.port}`);
+    });
+  } catch (error) {
+    console.error("Failed to initialize Gemini client:", error);
+    process.exit(1);
+  }
+}
+
+void bootstrap();
